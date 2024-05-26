@@ -49,21 +49,21 @@ def main():
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-if args.train_model:
-    train_loss_list, train_acc_list = train_model(model, train_loader, criterion, optimizer, device, len(vocab) + 1, NUM_EPOCHS)
-    test_acc_list = [evaluate_model(model, test_loader, device, len(vocab) + 1) for _ in range(NUM_EPOCHS)]
-    
-    plot_results(train_loss_list, train_acc_list, test_acc_list)
-    
-    cm = compute_confusion_matrix(model, test_loader, y_test, device)
-    print("Confusion Matrix:")
-    print(cm)
+    if args.train_model:
+        train_loss_list, train_acc_list = train_model(model, train_loader, criterion, optimizer, device, len(vocab) + 1, NUM_EPOCHS)
+        test_acc_list = [evaluate_model(model, test_loader, device, len(vocab) + 1) for _ in range(NUM_EPOCHS)]
+        
+        plot_results(train_loss_list, train_acc_list, test_acc_list)
+        
+        cm = compute_confusion_matrix(model, test_loader, y_test, device)
+        print("Confusion Matrix:")
+        print(cm)
 
-    # Save the model
-    torch.save(model.state_dict(), 'model.pth')
-else:
-    test_acc = evaluate_model(model, test_loader, device, len(vocab) + 1)
-    print(f"Test Accuracy: {test_acc:.4f}")
+        # Save the model
+        torch.save(model.state_dict(), 'model.pth')
+    else:
+        test_acc = evaluate_model(model, test_loader, device, len(vocab) + 1)
+        print(f"Test Accuracy: {test_acc:.4f}")
 
 if __name__ == "__main__":
     main()
