@@ -20,7 +20,7 @@ load_dotenv()
 EMBEDDING_DIM = int(os.getenv('EMBEDDING_DIM'))
 HIDDEN_DIM = int(os.getenv('HIDDEN_DIM'))
 OUTPUT_DIM = int(os.getenv('OUTPUT_DIM'))
-NUM_EPOCHS = int(os.getenv('NUM_EPOCHS')) + 10  # Increase the number of epochs for better training
+NUM_EPOCHS = int(os.getenv('NUM_EPOCHS'))  # Increase the number of epochs for better training
 LEARNING_RATE = float(os.getenv('LEARNING_RATE'))
 BATCH_SIZE = int(os.getenv('BATCH_SIZE'))
 
