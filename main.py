@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 from dotenv import load_dotenv
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 from data_processing import load_data, preprocess_text, text_to_sequence
 from dataset import TextDataset
 from model import LSTMModel
@@ -19,7 +20,7 @@ load_dotenv()
 EMBEDDING_DIM = int(os.getenv('EMBEDDING_DIM'))
 HIDDEN_DIM = int(os.getenv('HIDDEN_DIM'))
 OUTPUT_DIM = int(os.getenv('OUTPUT_DIM'))
-NUM_EPOCHS = int(os.getenv('NUM_EPOCHS'))
+NUM_EPOCHS = int(os.getenv('NUM_EPOCHS')) + 10  # Increase the number of epochs for better training
 LEARNING_RATE = float(os.getenv('LEARNING_RATE'))
 BATCH_SIZE = int(os.getenv('BATCH_SIZE'))
 
@@ -67,6 +68,28 @@ def main():
         model.load_state_dict(torch.load('model.pth'))
         test_acc = evaluate_model(model, test_loader, device, len(vocab) + 1)
         print(f"Test Accuracy: {test_acc:.4f}")
+
+        # Calculate additional metrics
+        y_pred = []
+        y_true = []
+        with torch.no_grad():
+            for texts, labels in test_loader:
+                texts, labels = texts.to(device), labels.to(device)
+                outputs = model(texts)
+                predicted = torch.round(outputs.squeeze()).tolist()
+                y_pred.extend(predicted)
+                y_true.extend(labels.tolist())
+
+        precision = precision_score(y_true, y_pred)
+        recall = recall_score(y_true, y_pred)
+        f1 = f1_score(y_true, y_pred)
+        cm = confusion_matrix(y_true, y_pred)
+
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1 Score: {f1:.4f}")
+        print("Confusion Matrix:")
+        print(cm)
 
     # Show plots if running on Colab
     try:
