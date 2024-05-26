@@ -1,3 +1,4 @@
+# main.py
 import os
 import torch
 from torch.utils.data import DataLoader
@@ -9,6 +10,8 @@ from model import LSTMModel
 from train_eval import train_model, evaluate_model, plot_results, compute_confusion_matrix
 import torch.nn as nn
 import torch.optim as optim
+import matplotlib.pyplot as plt
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -23,8 +26,6 @@ BATCH_SIZE = int(os.getenv('BATCH_SIZE'))
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-
-
     parser.add_argument("--train_model", action="store_true", help="Train the model if this flag is provided.")
     args = parser.parse_args()
 
@@ -62,8 +63,17 @@ def main():
         # Save the model
         torch.save(model.state_dict(), 'model.pth')
     else:
+        # Load the model
+        model.load_state_dict(torch.load('model.pth'))
         test_acc = evaluate_model(model, test_loader, device, len(vocab) + 1)
         print(f"Test Accuracy: {test_acc:.4f}")
+
+    # Show plots if running on Colab
+    try:
+        import google.colab
+        plt.show()
+    except ImportError:
+        pass
 
 if __name__ == "__main__":
     main()
