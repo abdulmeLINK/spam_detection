@@ -5,16 +5,19 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 
 def train_model(model, train_loader, criterion, optimizer, device, vocab_size, num_epochs):
+    print("Starting training...")
     train_loss_list = []
     train_acc_list = []
 
     for epoch in range(num_epochs):
+        print(f"Starting epoch {epoch+1}/{num_epochs}...")
         model.train()
         train_loss = 0.0
         correct_train = 0
         total_train = 0
 
-        for texts, labels in train_loader:
+        for i, (texts, labels) in enumerate(train_loader):
+            print(f"Starting batch {i+1}...")
             texts, labels = texts.to(device), labels.to(device)
 
             optimizer.zero_grad()
@@ -30,22 +33,27 @@ def train_model(model, train_loader, criterion, optimizer, device, vocab_size, n
 
         train_loss_list.append(train_loss / total_train)
         train_acc_list.append(correct_train / total_train)
+        print(f"Epoch {epoch+1} completed. Loss: {train_loss / total_train}, Accuracy: {correct_train / total_train}")
 
+    print("Training completed.")
     return train_loss_list, train_acc_list
 
 def evaluate_model(model, test_loader, device, vocab_size):
+    print("Starting evaluation...")
     model.eval()
     correct_test = 0
     total_test = 0
 
     with torch.no_grad():
-        for texts, labels in test_loader:
+        for i, (texts, labels) in enumerate(test_loader):
+            print(f"Evaluating batch {i+1}...")
             texts, labels = texts.to(device), labels.to(device)
             outputs = model(texts)
             predicted = torch.round(outputs.squeeze())
             correct_test += (predicted == labels).sum().item()
             total_test += texts.size(0)
 
+    print(f"Evaluation completed. Accuracy: {correct_test / total_test}")
     return correct_test / total_test
 
 def plot_results(train_loss_list, train_acc_list, test_acc_list):
