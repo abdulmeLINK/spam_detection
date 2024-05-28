@@ -23,29 +23,35 @@ def main(train_model_flag):
 
     # Load and preprocess data
     print("Loading and preprocessing data...")
-    texts, labels = load_data('./enron')
-    cleaned_texts, labels = preprocess_text(texts, labels)
-    sequences, vocab = text_to_sequence(cleaned_texts)
-    train_sequences, test_sequences, y_train, y_test, max_length = create_datasets(sequences, labels)
+    if not os.path.exists('./processed_data/ham.txt') or \
+    not os.path.exists('./processed_data/spam.txt') or \
+    not os.path.exists('./processed_data/train.txt') or \
+    not os.path.exists('./processed_data/test.txt'):
+        texts, labels = load_data('./enron')
+        cleaned_texts, labels = preprocess_text(texts, labels)
+        sequences, vocab = text_to_sequence(cleaned_texts)
+        train_sequences, test_sequences, y_train, y_test, max_length = create_datasets(sequences, labels)
 
-    # Save processed data
-    with open('./processed_data/ham.txt', 'w') as f:
-        for text, label in zip(cleaned_texts, labels):
-            if label == 0:
-                f.write(text + '\n')
+        # Save processed data
+        with open('./processed_data/ham.txt', 'w') as f:
+            for text, label in zip(cleaned_texts, labels):
+                if label == 0:
+                    f.write(text + '\n')
 
-    with open('./processed_data/spam.txt', 'w') as f:
-        for text, label in zip(cleaned_texts, labels):
-            if label == 1:
-                f.write(text + '\n')
+        with open('./processed_data/spam.txt', 'w') as f:
+            for text, label in zip(cleaned_texts, labels):
+                if label == 1:
+                    f.write(text + '\n')
 
-    with open('./processed_data/train.txt', 'w') as f:
-        for text in train_sequences:
-            f.write(' '.join(map(str, text)) + '\n')
+        with open('./processed_data/train.txt', 'w') as f:
+            for text in train_sequences:
+                f.write(' '.join(map(str, text)) + '\n')
 
-    with open('./processed_data/test.txt', 'w') as f:
-        for text in test_sequences:
-            f.write(' '.join(map(str, text)) + '\n')
+        with open('./processed_data/test.txt', 'w') as f:
+            for text in test_sequences:
+                f.write(' '.join(map(str, text)) + '\n')
+    else:
+        print("Processed data already exists. Skipping preprocessing...")
 
     # Create datasets and data loaders
     train_dataset = TextDataset(train_sequences, y_train, max_length)
