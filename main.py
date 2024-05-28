@@ -23,7 +23,8 @@ def main(train_model_flag):
 
     # Load and preprocess data
     print("Loading and preprocessing data...")
-    if not os.path.exists('./processed_data/ham.txt') or \
+    if not os.path.exists('./processed_data/vocab.txt') or \
+    not os.path.exists('./processed_data/ham.txt') or \
     not os.path.exists('./processed_data/spam.txt') or \
     not os.path.exists('./processed_data/train.txt') or \
     not os.path.exists('./processed_data/test.txt'):
@@ -31,7 +32,6 @@ def main(train_model_flag):
         cleaned_texts, labels = preprocess_text(texts, labels)
         sequences, vocab = text_to_sequence(cleaned_texts)
         train_sequences, test_sequences, y_train, y_test, max_length = create_datasets(sequences, labels)
-
 
         # Save processed data
         with open('./processed_data/ham.txt', 'w') as f:
@@ -51,6 +51,10 @@ def main(train_model_flag):
         with open('./processed_data/test.txt', 'w') as f:
             for text in test_sequences:
                 f.write(' '.join(map(str, text)) + '\n')
+
+        # Save vocab
+        with open('./processed_data/vocab.txt', 'w') as f:
+            f.write('\n'.join(vocab))
     else:
         print("Processed data already exists. Loading from files...")
         with open('./processed_data/train.txt', 'r') as f:
@@ -64,6 +68,10 @@ def main(train_model_flag):
         y_test = y_train[int(len(y_train) * 0.8):]
         y_train = y_train[:int(len(y_train) * 0.8)]
         max_length = max(max(len(seq) for seq in train_sequences), max(len(seq) for seq in test_sequences))
+
+        # Load vocab
+        with open('./processed_data/vocab.txt', 'r') as f:
+            vocab = f.read().splitlines()
 
     # Create datasets and data loaders
     train_dataset = TextDataset(train_sequences, y_train, max_length)
