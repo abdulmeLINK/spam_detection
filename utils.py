@@ -166,14 +166,12 @@ class LSTMModel(nn.Module):
 from tqdm import tqdm
 
 # Train the model
-def train_model(model, train_loader, criterion, optimizer, num_epochs):
+def train_model(model, train_loader, criterion, optimizer, device, num_epochs):
     print("Starting training...")
     train_loss_list = []
     train_acc_list = []
-    test_acc_list = []
 
     # Specify the device for computation
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
 
     for epoch in tqdm(range(num_epochs), desc="Epochs"):
@@ -205,14 +203,13 @@ def train_model(model, train_loader, criterion, optimizer, num_epochs):
     return train_loss_list, train_acc_list
 
 # Evaluate the model
-def evaluate_model(model, test_loader):
+def evaluate_model(model, test_loader, device):
     print("Starting evaluation...")
     model.eval()
     correct_test = 0
     total_test = 0
 
     # Specify the device for computation
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
 
     with torch.no_grad():
