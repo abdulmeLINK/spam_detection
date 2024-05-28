@@ -163,6 +163,8 @@ class LSTMModel(nn.Module):
         output = self.fc(self.dropout(last_hidden_state))
         return self.sigmoid(output)
 
+from tqdm import tqdm
+
 # Train the model
 def train_model(model, train_loader, criterion, optimizer, num_epochs):
     print("Starting training...")
@@ -174,7 +176,7 @@ def train_model(model, train_loader, criterion, optimizer, num_epochs):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
 
-    for epoch in range(num_epochs):
+    for epoch in tqdm(range(num_epochs), desc="Epochs"):
         model.train()
         train_loss = 0.0
         correct_train = 0
