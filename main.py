@@ -32,6 +32,7 @@ def main(train_model_flag):
         sequences, vocab = text_to_sequence(cleaned_texts)
         train_sequences, test_sequences, y_train, y_test, max_length = create_datasets(sequences, labels)
 
+
         # Save processed data
         with open('./processed_data/ham.txt', 'w') as f:
             for text, label in zip(cleaned_texts, labels):
@@ -51,7 +52,18 @@ def main(train_model_flag):
             for text in test_sequences:
                 f.write(' '.join(map(str, text)) + '\n')
     else:
-        print("Processed data already exists. Skipping preprocessing...")
+        print("Processed data already exists. Loading from files...")
+        with open('./processed_data/train.txt', 'r') as f:
+            train_sequences = [list(map(int, line.strip().split())) for line in f]
+        with open('./processed_data/test.txt', 'r') as f:
+            test_sequences = [list(map(int, line.strip().split())) for line in f]
+        with open('./processed_data/ham.txt', 'r') as f:
+            y_train = [0] * len(f.readlines())
+        with open('./processed_data/spam.txt', 'r') as f:
+            y_train += [1] * len(f.readlines())
+        y_test = y_train[int(len(y_train) * 0.8):]
+        y_train = y_train[:int(len(y_train) * 0.8)]
+        max_length = max(max(len(seq) for seq in train_sequences), max(len(seq) for seq in test_sequences))
 
     # Create datasets and data loaders
     train_dataset = TextDataset(train_sequences, y_train, max_length)
