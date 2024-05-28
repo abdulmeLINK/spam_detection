@@ -1,102 +1,90 @@
-# main.py
 import os
 import torch
 from torch.utils.data import DataLoader
 from dotenv import load_dotenv
-from sklearn.model_selection import train_test_split
+import argparse
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
-from data_processing import load_data, preprocess_text, text_to_sequence
-from dataset import TextDataset
-from model import LSTMModel
-from train_eval import train_model, evaluate_model, plot_results, compute_confusion_matrix
-import torch.nn as nn
-import torch.optim as optim
-import matplotlib.pyplot as plt
+from utils import load_data, preprocess_text, text_to_sequence, create_datasets, TextDataset, LSTMModel, train_model, evaluate_model, save_model, load_model, plot_results, compute_confusion_matrix
 
-# Load environment variables from .env file
-load_dotenv()
+def main(train_model_flag):
+    # Load environment variables from .env file
+    load_dotenv()
 
-# Read parameters from environment variables
-EMBEDDING_DIM = int(os.getenv('EMBEDDING_DIM'))
-HIDDEN_DIM = int(os.getenv('HIDDEN_DIM'))
-OUTPUT_DIM = int(os.getenv('OUTPUT_DIM'))
-NUM_EPOCHS = int(os.getenv('NUM_EPOCHS'))  # Increase the number of epochs for better training
-LEARNING_RATE = float(os.getenv('LEARNING_RATE'))
-BATCH_SIZE = int(os.getenv('BATCH_SIZE'))
+    # Read parameters from environment variables
+    EMBEDDING_DIM = int(os.getenv('EMBEDDING_DIM', 100))
+    HIDDEN_DIM = int(os.getenv('HIDDEN_DIM', 256))
+    OUTPUT_DIM = int(os.getenv('OUTPUT_DIM', 1))
+    NUM_EPOCHS = int(os.getenv('NUM_EPOCHS', 10))
+    BATCH_SIZE = int(os.getenv('BATCH_SIZE', 64))
+    LEARNING_RATE = float(os.getenv('LEARNING_RATE', 0.001))
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--train_model", action="store_true", help="Train the model if this flag is provided.")
-    args = parser.parse_args()
+    # Load and preprocess data
+    print("Loading and preprocessing data...")
+    texts, labels = load_data('./enron')
+    cleaned_texts, labels = preprocess_text(texts, labels)
+    sequences, vocab = text_to_sequence(cleaned_texts)
+    train_sequences, test_sequences, y_train, y_test, max_length = create_datasets(sequences, labels)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Save processed data
+    with open('./processed_data/ham.txt', 'w') as f:
+        for text, label in zip(cleaned_texts, labels):
+            if label == 0:
+                f.write(text + '\n')
 
-    data_dir = "enron"
-    texts, labels = load_data(data_dir)
+    with open('./processed_data/spam.txt', 'w') as f:
+        for text, label in zip(cleaned_texts, labels):
+            if label == 1:
+                f.write(text + '\n')
 
-    texts_cleaned = preprocess_text(list(zip(texts, labels)))
-    sequences, vocab = text_to_sequence(texts_cleaned)
+    with open('./processed_data/train.txt', 'w') as f:
+        for text in train_sequences:
+            f.write(' '.join(map(str, text)) + '\n')
 
-    X_train, X_test, y_train, y_test = train_test_split([seq for seq, label in sequences], [label for seq, label in sequences], test_size=0.2, stratify=labels, random_state=42)
+    with open('./processed_data/test.txt', 'w') as f:
+        for text in test_sequences:
+            f.write(' '.join(map(str, text)) + '\n')
 
-    max_length = max(len(seq) for seq in X_train) + 10
-    train_dataset = TextDataset(X_train, y_train, max_length)
+    # Create datasets and data loaders
+    train_dataset = TextDataset(train_sequences, y_train, max_length)
+    test_dataset = TextDataset(test_sequences, y_test, max_length)
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-
-    test_dataset = TextDataset(X_test, y_test, max_length)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    model = LSTMModel(EMBEDDING_DIM, HIDDEN_DIM, OUTPUT_DIM, len(vocab) + 1).to(device)
+    # Initialize the model, criterion, and optimizer
+    model = LSTMModel(EMBEDDING_DIM, HIDDEN_DIM, OUTPUT_DIM, len(vocab) + 1).to(DEVICE)
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    if args.train_model:
-        train_loss_list, train_acc_list = train_model(model, train_loader, criterion, optimizer, device, len(vocab) + 1, NUM_EPOCHS)
-        test_acc_list = [evaluate_model(model, test_loader, device, len(vocab) + 1) for _ in range(NUM_EPOCHS)]
+    if train_model_flag:
+        # Train the model
+        train_loss_list, train_acc_list = train_model(model, train_loader, criterion, optimizer, DEVICE, NUM_EPOCHS)
         
+        # Evaluate the model on the test set
+        test_acc = evaluate_model(model, test_loader, DEVICE)
+        test_acc_list = [test_acc] * NUM_EPOCHS
+        
+        # Save the model
+        save_model(model, 'lstm_model.pth')
+
+        # Plot results
         plot_results(train_loss_list, train_acc_list, test_acc_list)
         
-        cm = compute_confusion_matrix(model, test_loader, y_test, device)
-        print("Confusion Matrix:")
-        print(cm)
-
-        # Save the model
-        torch.save(model.state_dict(), 'model.pth')
+        # Compute confusion matrix
+        compute_confusion_matrix(model, test_loader, DEVICE)
     else:
-        # Load the model
-        model.load_state_dict(torch.load('model.pth'))
-        test_acc = evaluate_model(model, test_loader, device, len(vocab) + 1)
-        print(f"Test Accuracy: {test_acc:.4f}")
+        # Load the pre-trained model
+        load_model(model, 'lstm_model.pth', DEVICE)
 
-        # Calculate additional metrics
-        y_pred = []
-        y_true = []
-        with torch.no_grad():
-            for texts, labels in test_loader:
-                texts, labels = texts.to(device), labels.to(device)
-                outputs = model(texts)
-                predicted = torch.round(outputs.squeeze()).tolist()
-                y_pred.extend(predicted)
-                y_true.extend(labels.tolist())
+        # Evaluate the model on the test set
+        test_acc = evaluate_model(model, test_loader, DEVICE)
 
-        precision = precision_score(y_true, y_pred)
-        recall = recall_score(y_true, y_pred)
-        f1 = f1_score(y_true, y_pred)
-        cm = confusion_matrix(y_true, y_pred)
+        # Compute confusion matrix
+        compute_confusion_matrix(model, test_loader, DEVICE)
 
-        print(f"Precision: {precision:.4f}")
-        print(f"Recall: {recall:.4f}")
-        print(f"F1 Score: {f1:.4f}")
-        print("Confusion Matrix:")
-        print(cm)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--train_model', action='store_true', help='Train the model')
+    args = parser.parse_args()
 
-    # Show plots if running on Colab
-    try:
-        import google.colab
-        plt.show()
-    except ImportError:
-        pass
-
-if __name__ == "__main__":
-    main()
+    main(args.train_model)

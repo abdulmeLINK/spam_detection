@@ -1,5 +1,6 @@
-    torch
+torch
 matplotlib
 numpy
 pandas
 scikit-learn
+python-dotenv
