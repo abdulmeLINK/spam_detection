@@ -64,7 +64,7 @@ def main(train_model_flag):
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    if train_model_flag:
+    if train_model_flag or not os.path.exists('lstm_model.pth'):
         # Train the model
         train_loss_list, train_acc_list = train_model(model, train_loader, criterion, optimizer, DEVICE, NUM_EPOCHS)
         
