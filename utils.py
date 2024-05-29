@@ -67,9 +67,9 @@ def text_to_sequence(texts):
 
 # Pad sequences to the same length
 def pad_sequence(sequence, max_length):
-    padded_sequence = np.zeros(max_length, dtype=int)
-    padded_sequence[:len(sequence)] = sequence[:max_length]
-    return padded_sequence
+    pad_seq = np.zeros(max_length, dtype=int)
+    pad_seq[:len(sequence)] = sequence[:max_length]
+    return pad_seq
 
 # Create datasets for training and testing
 def create_datasets(sequences, labels, test_size=0.2, random_state=42):
@@ -136,8 +136,8 @@ def compute_confusion_matrix(model, test_loader, device):
 
 # Dataset class for handling the text data
 class TextDataset(Dataset):
-    def __init__(self, texts, labels, max_length):
-        self.texts = [pad_sequence(text, max_length) for text in texts]
+    def __init__(self, texts, labels, max_len):
+        self.texts = [pad_sequence(text, max_len) for text in texts]
         self.labels = labels
 
     def __len__(self):
@@ -148,9 +148,9 @@ class TextDataset(Dataset):
 
 # LSTM model class
 class LSTMModel(nn.Module):
-    def __init__(self, embedding_dim, hidden_dim, output_dim, vocab_size):
+    def __init__(self, embedding_dim, hidden_dim, output_dim, voc_size):
         super(LSTMModel, self).__init__()
-        self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embedding_dim)
+        self.embedding = nn.Embedding(num_embeddings=voc_size, embedding_dim=embedding_dim)
         self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, bidirectional=True)
         self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(hidden_dim * 2, output_dim)
