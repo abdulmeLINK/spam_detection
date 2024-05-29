@@ -17,7 +17,7 @@ def main(train_model_flag):
     HIDDEN_DIM = int(os.getenv('HIDDEN_DIM', 256))
     OUTPUT_DIM = int(os.getenv('OUTPUT_DIM', 1))
     NUM_EPOCHS = int(os.getenv('NUM_EPOCHS', 10))
-    BATCH_SIZE = int(os.getenv('BATCH_SIZE', 32))
+    BATCH_SIZE = int(os.getenv('BATCH_SIZE', 16))
     LEARNING_RATE = float(os.getenv('LEARNING_RATE', 0.001))
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
